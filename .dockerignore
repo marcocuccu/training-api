@@ -1,0 +1,40 @@
+# Build output
+**/bin/
+**/obj/
+
+# VS files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Secrets
+appsettings.Local.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test results / coverage
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+packages/
+
+# Git
+.git
+.gitignore

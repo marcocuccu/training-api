@@ -1,0 +1,44 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# VS files
+.vs/
+.vscode/*
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Secrets
+appsettings.Local.json
+#appsettings.Development.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test results / coverage
+TestResults/
+coverage/
+coverage.*
+*.trx
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+packages/
+
+# Docker
+.docker/
+docker-data/
