@@ -38,7 +38,7 @@ public class UserServiceTests
     [Trait("Category", "GetUser")]
     public async Task GetUser_WhenUserExists_ReturnsExistingUser()
     {
-        // Arrange
+        // ## ARRANGE
         var expectedUserId = 1;
         var expectedFirstName = "firstName";
         var expectedLastName = "lastName";
@@ -55,10 +55,10 @@ public class UserServiceTests
 
         var userService = new UserService(userRepo.Object, logger.Object);
 
-        // Act
+        // ## ACT
         var user = await userService.GetUser(expectedUserId);
 
-        // Assert
+        // ## ASSERT
         Assert.NotNull(user);
         Assert.Equal(expectedUserId, user.Id);
         Assert.Equal($"{expectedFirstName} {expectedLastName}", user.FullName);
@@ -70,7 +70,7 @@ public class UserServiceTests
     [Trait("Category", "GetUser")]
     public async Task GetUser_WhenUserDoNotExists_ThrowsKeyNotFoundException()
     {
-        // Arrange
+        // ## ARRANGE
         int missingUserId = 999;
         var userRepo = new Mock<IUserRepository>();
         var logger = new Mock<ILogger<UserService>>();
@@ -81,42 +81,69 @@ public class UserServiceTests
 
         var userService = new UserService(userRepo.Object, logger.Object);
 
-        // Act
+        // ## ACT
         async Task Act() => await userService.GetUser(missingUserId);
 
-        // Assert
+        // ## ASSERT
         await Assert.ThrowsAsync<KeyNotFoundException>(Act);
     }
 
     [Fact]
     [Trait("Category", "GetUsers")]
-    public async Task GetUsers_WhenUsersExist_ReturnsNotEmptyCollection()
+    public async Task GetUsers_WhenUsersExist_ReturnsUsers()
     {
-        // Arrange
-        var usersFromRepository = CreateUsers(2);
+        // ## ARRANGE
+        var usersFromRepository = new List<User>
+        {
+            CreateUser(
+                userId: 1,
+                firstName: "test1",
+                lastName: "test1",
+                email: "test1@email.com",
+                gender: "test1"
+            ),
+            CreateUser(
+                userId: 2,
+                firstName: "test2",
+                lastName: "test2",
+                email: "test2@email.com",
+                gender: "test2"
+            )
+        };
 
-        var userRepositoryMock = new Mock<IUserRepository>();
-        var loggerMock = new Mock<ILogger<UserService>>();
+        var userRepo = new Mock<IUserRepository>();
+        var logger = new Mock<ILogger<UserService>>();
 
-        userRepositoryMock
+        userRepo
             .Setup(repo => repo.GetUsers())
             .ReturnsAsync(usersFromRepository);
 
-        var userService = new UserService(userRepositoryMock.Object, loggerMock.Object);
+        var userService = new UserService(userRepo.Object, logger.Object);
 
-        // Act
-        var users = await userService.GetUsers();
+        // ## ACT
+        var result = (await userService.GetUsers()).ToList();
 
-        // Assert
-        Assert.NotNull(users);
-        Assert.NotEmpty(users);
+        // ## ASSERT
+        Assert.Equal(2, result.Count);
+
+        Assert.Contains(result, u =>
+            u.Id == 1 &&
+            u.FullName == "test1 test1" &&
+            u.Email == "test1@email.com" &&
+            u.Gender == "test1");
+
+        Assert.Contains(result, u =>
+            u.Id == 2 &&
+            u.FullName == "test2 test2" &&
+            u.Email == "test2@email.com" &&
+            u.Gender == "test2");
     }
 
     [Fact]
     [Trait("Category", "GetUsers")]
     public async Task GetUsers_WhenUsersDontExist_ReturnsEmptyCollection()
     {
-        // Arrange
+        // ## ARRANGE
         var users = CreateUsers(0);
 
         var userRepo = new Mock<IUserRepository>();
@@ -128,10 +155,10 @@ public class UserServiceTests
 
         var userService = new UserService(userRepo.Object, logger.Object);
 
-        // Act
+        // ## ACT
         var result = await userService.GetUsers();
 
-        // Assert
+        // ## ASSERT
         Assert.NotNull(result);
         Assert.Empty(result);
     }
@@ -140,7 +167,7 @@ public class UserServiceTests
     [Trait("Category", "GetUsers")]
     public async Task GetUsers_WhenUsersAreAlsoNotActive_ReturnsOnlyActive()
     {
-        // Arrange
+        // ## ARRANGE
         var usersFromRepository = new List<User>
         {
             CreateUser(userId: 1, email: "test1@email.com", active: true),
@@ -158,10 +185,10 @@ public class UserServiceTests
 
         var userService = new UserService(userRepo.Object, logger.Object);
 
-        // Act
+        // ## ACT
         var users = await userService.GetUsers();
 
-        // Assert
+        // ## ASSERT
         Assert.NotNull(users);
         Assert.NotEmpty(users);
         Assert.Equal(2, users.Count());
@@ -226,6 +253,91 @@ public class UserServiceTests
     }
 
     [Fact]
+    [Trait("Category", "EditUser")]
+    public async Task EditUser_WhenOnlyFirstNameIsProvided_PreservesExistingValues()
+    {
+        // ## ARRANGE
+        int userId = 1;
+
+        var existingUser = CreateUser(
+            userId: userId,
+            firstName: "OldFirstName",
+            lastName: "OldLastName",
+            email: "old@email.com",
+            gender: "OldGender"
+        );
+
+        var updateDto = new UserUpdateDto
+        {
+            FirstName = "NewFirstName"
+        };
+
+        var userRepo = new Mock<IUserRepository>();
+        var logger = new Mock<ILogger<UserService>>();
+
+        userRepo
+            .Setup(repo => repo.GetUser(userId))
+            .ReturnsAsync(existingUser);
+
+        userRepo
+            .Setup(repo => repo.EditUser(userId, It.IsAny<User>()))
+            .ReturnsAsync(true);
+
+        var userService = new UserService(userRepo.Object, logger.Object);
+
+        // ## ACT
+        var success = await userService.EditUser(userId, updateDto);
+
+        // ## ASSERT
+        Assert.True(success);
+
+        userRepo.Verify(repo => repo.EditUser(
+            userId,
+            It.Is<User>(u =>
+                u.UserId == userId &&
+                u.FirstName == "NewFirstName" &&
+                u.LastName == "OldLastName" &&
+                u.Email == "old@email.com" &&
+                u.Gender == "OldGender"
+            )),
+            Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "EditUser")]
+    public async Task EditUser_WhenRepoFails_ThrowsInvalidOperationException()
+    {
+        // ## ARRANGE
+        int userId = 1;
+
+        var existingUser = CreateUser(userId: userId);
+
+        var updateDto = new UserUpdateDto
+        {
+            FirstName = "NewFirstName"
+        };
+
+        var userRepo = new Mock<IUserRepository>();
+        var logger = new Mock<ILogger<UserService>>();
+
+        userRepo
+            .Setup(repo => repo.GetUser(userId))
+            .ReturnsAsync(existingUser);
+
+        userRepo
+            .Setup(repo => repo.EditUser(userId, It.IsAny<User>()))
+            .ReturnsAsync(false);
+
+        var userService = new UserService(userRepo.Object, logger.Object);
+
+        // ## ACT
+        async Task Act() => await userService.EditUser(userId, updateDto);
+
+        // ## ASSERT
+        await Assert.ThrowsAsync<InvalidOperationException>(Act);
+    }
+
+    [Fact]
     [Trait("Category", "DeleteUser")]
     public async Task DeleteUser_WhenUserExists_CorrectlyDeletesUser()
     {
@@ -285,5 +397,34 @@ public class UserServiceTests
 
         // ## ASSERT
         await Assert.ThrowsAsync<KeyNotFoundException>(Act);
+    }
+
+    [Fact]
+    [Trait("Category", "DeleteUser")]
+    public async Task DeleteUser_WhenRepositoryFails_ThrowsInvalidOperationException()
+    {
+        // ## ARRANGE
+        int userId = 1;
+
+        var existingUser = CreateUser(userId: userId);
+
+        var userRepo = new Mock<IUserRepository>();
+        var logger = new Mock<ILogger<UserService>>();
+
+        userRepo
+            .Setup(repo => repo.GetUser(userId))
+            .ReturnsAsync(existingUser);
+
+        userRepo
+            .Setup(repo => repo.DeleteUser(userId))
+            .ReturnsAsync(false);
+
+        var userService = new UserService(userRepo.Object, logger.Object);
+
+        // ## ACT
+        async Task Act() => await userService.DeleteUser(userId);
+
+        // ## ASSERT
+        await Assert.ThrowsAsync<InvalidOperationException>(Act);
     }
 }
