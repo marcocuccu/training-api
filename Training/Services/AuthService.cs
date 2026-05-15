@@ -41,9 +41,7 @@ public class AuthService
         // check email is not registered yet
         var emailAlreadyRegistered = await _authRepo.EmailAlreadyRegistered(registerRequestDto.Email);
         if(emailAlreadyRegistered)
-        {
             throw new ConflictException("Email already registered");
-        }
 
         // create Salt
         var passwordSalt = _authHelper.CreatePasswordSalt();
