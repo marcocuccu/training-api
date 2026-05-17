@@ -53,6 +53,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else if (app.Environment.IsEnvironment("Testing"))
+{
+    app.UseCors("DevCors");
+}
 else    // Production, Staging, ...
 {
     app.UseHttpsRedirection();
@@ -65,4 +69,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
