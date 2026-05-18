@@ -30,8 +30,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             $"Encrypt=True;" +
             $"TrustServerCertificate=True";
 
-        // Overriding env variables for testing here instead of using ConfigureAppConfiguration(), as it comes too late, and
-        // jwt variables are already used before overriding them
+        // Overriding env variables for testing here instead of ConfigureWebHost(), 
+        // as that would be reached too late, jwt variables would be already used before overriding them
         Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", ConnectionString);
         Environment.SetEnvironmentVariable("AppSettings__PasswordPepper", "TEST_PASSWORD_PEPPER_1234567890");
         Environment.SetEnvironmentVariable("Jwt__Key", "THIS_IS_A_LONG_TEST_SECRET_KEY_for_JWT_1234567890_1234567890_1234567890_1234567890");
@@ -44,21 +44,5 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-
-        // builder.ConfigureAppConfiguration((context, configBuilder) =>
-        // {
-        //     configBuilder.Sources.Clear();
-
-        //     configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
-        //     {
-        //         ["ConnectionStrings:DefaultConnection"] = ConnectionString,
-        //         ["AppSettings:PasswordPepper"] = "TEST_PASSWORD_PEPPER_1234567890",
-        //         ["Jwt:Key"] = "THIS_IS_A_LONG_TEST_SECRET_KEY_for_JWT_1234567890_1234567890_1234567890_1234567890",
-        //         ["Jwt:Issuer"] = "Training.Tests",
-        //         ["Jwt:Audience"] = "Training.Tests.Client",
-        //         ["Jwt:AccessTokenExpiresMin"] = "15",
-        //         ["Jwt:RefreshTokenExpiresMin"] = "10080"
-        //     });
-        // });
     }
 }

@@ -97,8 +97,6 @@ public class AuthIntegrationTests : IClassFixture<IntegrationTestFixture>
         
         // Act
         var getResponse = await client.SendAsync(getRequest);
-        var body = await getResponse.Content.ReadAsStringAsync();
-        var wwwAuthenticate = getResponse.Headers.WwwAuthenticate.ToString();
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
